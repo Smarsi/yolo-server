@@ -46,7 +46,7 @@ class Yolo_Service:
         for thread in self.threads:
             thread.join()
             self.threads.remove(thread)
-    
+
     def run(self, network: cv2.dnn.Net):
         while(self.running):
             sleep(0.1)
@@ -60,10 +60,8 @@ class Yolo_Service:
                 blob = cv2.dnn.blobFromImage(frame, 1/255, (416, 416), swapRB=True, crop=False)
                 network.setInput(blob)
                 output = network.forward()
-                self.output_fifo.append({"id": id, "output": output})
-    
+                self.output_fifo.append({"id": id, "output": dict(output)})
         return
-
 
     def add_frame(self, id: int, img_path: str):
         self.entry_fifo.append({"id": id, "img_path": img_path})

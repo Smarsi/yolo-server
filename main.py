@@ -14,7 +14,7 @@ from app.handlers.error_handler import global_error_handler, global_http_excepti
 from app.api.routes import router, get_tags_description
 
 # Services Import
-from app.service.yolo_service import Yolo_Service
+from app.service import Yolo_Service, set_global_yolo_service, get_global_yolo_service
 
 log = logging.getLogger("uvicorn")
 
@@ -83,11 +83,11 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 # Use this handler only in case you don't have a global middleware registred.
 # You can found this same declaration working on app/api/middlewares/setup_request.py
 
-yolo_service = Yolo_Service(2, "/home/richard/DNN-models/Yolo-v8/Detection/yolov8s.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
-
 @app.on_event("startup")
 async def startup_event():
+    yolo_service = Yolo_Service(2, "/home/richard/DNN-models/Yolo-v8/Detection/yolov8s.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
     yolo_service.start_service()
+    set_global_yolo_service(yolo_service)
     logging.info(
         "Starting Up..."
     )
@@ -95,6 +95,7 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    yolo_service = get_global_yolo_service()
     yolo_service.stop_service()
     logging.info(
         "Shutting Down"
