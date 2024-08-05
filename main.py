@@ -13,6 +13,9 @@ from app.handlers.error_handler import global_error_handler, global_http_excepti
 # Routers Import
 from app.api.routes import router, get_tags_description
 
+# Services Import
+from app.service.yolo_service import Yolo_Service
+
 log = logging.getLogger("uvicorn")
 
 def create_application() -> FastAPI:
@@ -46,7 +49,7 @@ def custom_openapi():
     # if app.openapi_schema:
     #     return app.openapi_schema
     openapi_schema = get_openapi(
-        title="MyStarterPack - API",
+        title="Yolo Server - API",
         version="1.0",
         #summary="This is a model API",
         description="All the documentation for this API can be found here.",
@@ -80,8 +83,11 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 # Use this handler only in case you don't have a global middleware registred.
 # You can found this same declaration working on app/api/middlewares/setup_request.py
 
+yolo_service = Yolo_Service(2, "/home/richard/DNN-models/Yolo-v8/Detection/yolov8s.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
+
 @app.on_event("startup")
 async def startup_event():
+    yolo_service.start_service()
     logging.info(
         "Starting Up..."
     )
@@ -89,6 +95,7 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    yolo_service.stop_service()
     logging.info(
         "Shutting Down"
     )

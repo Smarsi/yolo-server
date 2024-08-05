@@ -23,7 +23,7 @@ router = APIRouter(
 def get_tag_description():
     return {
         "name": "Yolo Server Routes",
-        "description": """ Used to use the YOLO server as a service. """
+        "description": """ Used to interact with the YOLO server as a service. """
     }
 
 @router.get("/get-available-models", response_model=GlobalResponse, response_model_exclude_unset=False, responses={**GlobaResponsesExamples})
