@@ -61,7 +61,6 @@ class Yolo_Service:
                 network.setInput(blob)
                 output = network.forward()
                 self.output_fifo.append({"id": id, "output": dict(output)})
-        return
 
     def add_frame(self, id: int, img_path: str):
         self.entry_fifo.append({"id": id, "img_path": img_path})
