@@ -1,6 +1,6 @@
 from pydantic import BaseModel, validator
 from typing import Any
-from typing import Optional
+from typing import Optional, Union
 from datetime import time
 
 from app.utils.datetime_manager import get_current_time, calc_timelapse
@@ -25,14 +25,14 @@ class Pagination(BaseModel):
 
 class GlobalResponse(BaseModel):
     status: bool
-    message: Optional[str] = ""
-    request_id: Optional[str] = ""
-    parameters: Optional[list] = []
-    start_ts: Optional[time] 
-    end_ts: Optional[time]
-    timelapse: Optional[time]
-    data: Optional[Any] = []
-    pagination: Optional[Pagination] = {}
+    message: str = ""
+    request_id: str = ""
+    parameters: list = []
+    start_ts: Union[time, str] = ""
+    end_ts: Union[time, str] = ""
+    timelapse: Union[time, str] = ""
+    data: Any = []
+    pagination: Union[Pagination, dict] = {}
 
     def set_start_ts(self, value):
         self.start_ts = value

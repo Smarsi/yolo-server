@@ -84,13 +84,14 @@ class Yolo_Service:
                         class_name = self.classes[class_id]
 
                         result.append({
+                            "class_id": int(class_id),
                             "class_name": class_name,
-                            "confidence": confidence,
-                            "class_confidence": class_confidence,
-                            "x_center": x_center,
-                            "y_center": y_center,
-                            "width": width,
-                            "height": height
+                            "confidence": float(confidence),
+                            "class_confidence": float(class_confidence),
+                            "x_center": float(x_center),
+                            "y_center": float(y_center),
+                            "width": float(width),
+                            "height": float(height)
                         })
 
                         # print(f"Caixa Delimitadora: ({x_min}, {y_min}, {x_max}, {y_max}), Confiança: {confidence}, Classe: {class_id}, Confiança da Classe: {class_confidence}")

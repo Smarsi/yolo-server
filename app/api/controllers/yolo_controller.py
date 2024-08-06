@@ -18,7 +18,7 @@ from app.utils.files_manager import File_Manager
 # Services Import
 from app.service import get_global_yolo_service
 
-async def get_available_models_controller(requester, log_file):
+async def get_available_models_controller(log_file):
     data_on_model = ExampleModel(
         name="Test",
         description="This is a test",
