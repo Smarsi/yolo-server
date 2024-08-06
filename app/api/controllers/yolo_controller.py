@@ -46,4 +46,7 @@ async def inference_controller(file, log_file):
     yolo_service.add_frame(inference_id, file["file_path"])
 
     result = yolo_service.get_result(inference_id)
+
+    log_writer(log_file, f"Controller - Succesfully processed inference. Result: {result}")
+
     return result

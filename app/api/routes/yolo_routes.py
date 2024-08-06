@@ -35,7 +35,7 @@ async def get_available_models(request: Request):
 
     response = GlobalResponse(
         status=True,
-        request_id=request.state.request_id,
+        request_id=request.state.uuid,
         data=controller,
     )
     response.set_start_ts(request.state.start_ts)
@@ -50,7 +50,7 @@ async def inference(request: Request, file: UploadFile = File(...)):
 
     response = GlobalResponse(
         status=True,
-        request_id=request.state.request_id,
+        request_id=request.state.uuid,
         data=controller
     )
     response.set_start_ts(request.state.start_ts)
