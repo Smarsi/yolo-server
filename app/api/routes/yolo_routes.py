@@ -13,7 +13,7 @@ from app.api.depends.is_authenticated_depend import verify_authentication
 from app.api.controllers.yolo_controller import get_available_models_controller, inference_controller
 
 # Models Import
-
+from app.api.models.yolo_model import YoloModel
 
 router = APIRouter(
     prefix='/yolo',
@@ -41,7 +41,7 @@ async def get_available_models(request: Request):
     response.set_start_ts(request.state.start_ts)
     return response
 
-@router.post("/inference", response_model=GlobalResponse, response_model_exclude_unset=False, responses={**GlobaResponsesExamples})
+@router.post("/inference", response_model=GlobalResponse, response_model_exclude_unset=False, responses={**GlobaResponsesExamples, **build_reponse_example(200, YoloModel, "Success - Returns a list with inference infos (detectiosn and bounding boxes)")})
 async def inference(request: Request, file: UploadFile = File(...)):
     log_file = request.state.log_file
     log_writer(log_file, f"Router - Inference router requested. Received: {file.filename}")
