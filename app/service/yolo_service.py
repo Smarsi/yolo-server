@@ -36,7 +36,7 @@ class Yolo_Service:
 
         # Load Classes File
         with open(self.classes_file, "r") as file:
-            self.classes = file.read().strip().split("\n")
+            self.classes = [line.strip() for line in file.readlines()]
 
         while len(self.threads) < self.instances_quantity:
             net = cv2.dnn.readNetFromONNX(self.model)
@@ -57,6 +57,8 @@ class Yolo_Service:
         while(self.running):
             sleep(0.1)
             data = {}
+            confidence_threshold = 0.5
+            nms_threshold = 0.4
             if len(self.entry_fifo) > 0:
                 data = self.entry_fifo.pop(0)
                 id = data["id"]
@@ -65,38 +67,72 @@ class Yolo_Service:
                 frame = cv2.imread(img_path)
                 blob = cv2.dnn.blobFromImage(frame, 1/255, (640, 640), swapRB=True, crop=False)
                 network.setInput(blob)
-                output = network.forward()
+                outputs = network.forward()
 
                 result = []
-                for i in range(output.shape[2]):
-                    detection = output[0, :, i]
-                    if detection[4] > 0.5:
-                        x_center = detection[0] / 640
-                        y_center = detection[1] / 640
-                        width = detection[2] / 640
-                        height = detection[3] / 640
-                        confidence = detection[4]
-                        class_scores = detection[5:]
+                boxes = []
+                confidences = []
+                class_ids = []
 
-                        # Identificar a classe com maior pontuação
-                        class_id = np.argmax(class_scores)
-                        class_confidence = class_scores[class_id]
+                for i in range(outputs.shape[2]):
+                    detection = outputs[0, :, i]
+                    if np.max(detection[4:]) > 0.5:
+                        x_center = detection[0] 
+                        y_center = detection[1] 
+                        width = detection[2] 
+                        height = detection[3]
+                        class_scores = detection[4:]
+                        
+                        class_id = np.argmax(detection[4:])
+                        confidence = np.max(detection[4:])
                         class_name = self.classes[class_id]
 
+                        boxes.append([x_center, y_center, width, height])
+                        confidences.append(confidence)    
+                        class_ids.append(class_id)
+
+                indices = cv2.dnn.NMSBoxesBatched(boxes, confidences, class_ids, confidence_threshold, nms_threshold)
+
+                if len(indices) > 0:
+                    for i in indices.flatten():
+                        x_center, y_center, width, height = boxes[i]
+                        x_min = int((x_center - width/2)) / 640
+                        y_min = int((y_center - height/2)) / 640
+                        x_max = int((x_min + width)) / 640
+                        y_max = int((y_min + height)) / 640
+                        x_center = x_center / 640
+                        y_center = y_center / 640
+                        confidence = confidences[i]
+                        class_id = class_ids[i]
+                        
                         result.append({
                             "class_id": int(class_id),
                             "class_name": class_name,
                             "confidence": float(confidence),
-                            "class_confidence": float(class_confidence),
-                            "x_center": float(x_center),
-                            "y_center": float(y_center),
-                            "width": float(width),
-                            "height": float(height)
+                            "bb_x_center": float(x_center),
+                            "bb_y_center": float(y_center),
+                            "bb_width": float(width),
+                            "bb_height": float(height),
+                            "bb_x_min": float(x_min),
+                            "bb_y_min": float(y_min),
+                            "bb_x_max": float(x_max),
+                            "bb_y_max": float(y_max)
                         })
+                                        
+
+                # result.append({
+                #     "class_id": int(class_id),
+                #     "class_name": class_name,
+                #     "confidence": float(class_confidence),
+                #     "x_center": float(x_center),
+                #     "y_center": float(y_center),
+                #     "width": float(width),
+                #     "height": float(height)
+                # })
 
                         # print(f"Caixa Delimitadora: ({x_min}, {y_min}, {x_max}, {y_max}), Confiança: {confidence}, Classe: {class_id}, Confiança da Classe: {class_confidence}")
 
-                    self.output_fifo.append({"id": id, "output": result})
+                self.output_fifo.append({"id": id, "output": result})
 
     def add_frame(self, id: int, img_path: str):
         self.entry_fifo.append({"id": id, "img_path": img_path})
