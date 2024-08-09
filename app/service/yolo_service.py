@@ -81,7 +81,6 @@ class Yolo_Service:
                         y_center = detection[1] 
                         width = detection[2] 
                         height = detection[3]
-                        class_scores = detection[4:]
                         
                         class_id = np.argmax(detection[4:])
                         confidence = np.max(detection[4:])
@@ -95,16 +94,27 @@ class Yolo_Service:
 
                 if len(indices) > 0:
                     for i in indices.flatten():
+                        # ---- Calc BoundingBox Coordinates min & max ----
                         x_center, y_center, width, height = boxes[i]
-                        x_min = int((x_center - width/2)) / 640
-                        y_min = int((y_center - height/2)) / 640
-                        x_max = int((x_min + width)) / 640
-                        y_max = int((y_min + height)) / 640
+                        x_min = (x_center - width/2)
+                        y_min = (y_center - height/2) 
+                        x_max = (x_min + width)
+                        y_max = (y_min + height)
+                        # -------------------------------------------------
+
+                        # ---- Normalize BoundingBox Coordinates ----------
                         x_center = x_center / 640
                         y_center = y_center / 640
+                        width = width / 640
+                        height = height / 640
+                        x_min = x_min / 640
+                        y_min = y_min / 640
+                        x_max = x_max / 640
+                        y_max = y_max / 640
                         confidence = confidences[i]
                         class_id = class_ids[i]
-                        
+                        # -------------------------------------------------
+
                         result.append({
                             "class_id": int(class_id),
                             "class_name": class_name,
