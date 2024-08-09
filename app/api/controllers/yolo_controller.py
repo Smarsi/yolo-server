@@ -7,7 +7,8 @@ from errors import APIError
 from logger_config import log_writer
 
 # Models Import
-from app.api.models.example_model import ExampleModel
+from app.api.models.yolo_model import YoloModel, YoloOutput
+
 
 # Validators Import
 from app.api.validators.example_validator import ExampleValidator
@@ -19,13 +20,13 @@ from app.utils.files_manager import File_Manager
 from app.service import get_global_yolo_service
 
 async def get_available_models_controller(log_file):
-    data_on_model = ExampleModel(
-        name="Test",
-        description="This is a test",
-        value=1,
-        is_active=True,
-        is_deleted=False
-    )
+    data_on_model = {
+        "name": "Test",
+        "description":"This is a test",
+        "value":1,
+        "is_active":True,
+        "is_deleted":False
+    }
 
     return data_on_model
 
@@ -46,7 +47,15 @@ async def inference_controller(file, log_file):
     yolo_service.add_frame(inference_id, file["file_path"])
 
     result = yolo_service.get_result(inference_id)
+    
+    # ==== Fit on MODEL ====
+    outputs = []
+    for out in result['output']: outputs.append(YoloOutput(**out))
+    response = YoloModel(
+        id=result["id"],
+        output=outputs
+    )
+    # ==== End Fit on MODEL ====
 
     log_writer(log_file, f"Controller - Succesfully processed inference. Result: {result}")
-
-    return result
+    return response

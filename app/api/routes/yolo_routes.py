@@ -13,7 +13,7 @@ from app.api.depends.is_authenticated_depend import verify_authentication
 from app.api.controllers.yolo_controller import get_available_models_controller, inference_controller
 
 # Models Import
-from app.api.models.example_model import ExampleModel
+
 
 router = APIRouter(
     prefix='/yolo',
