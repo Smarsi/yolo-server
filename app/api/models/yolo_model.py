@@ -14,6 +14,10 @@ class YoloOutput(BaseModel):
     bb_y_min: StrictFloat
     bb_x_max: StrictFloat
     bb_y_max: StrictFloat
+    bb_x_bottom_center: StrictFloat
+    bb_y_bottom_center: StrictFloat
+    bb_x_top_center: StrictFloat
+    bb_y_top_center: StrictFloat
 
     def normalize_fields(self):
         for field_name, field_value in self.model_dump().items():

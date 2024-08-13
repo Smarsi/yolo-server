@@ -100,6 +100,8 @@ class Yolo_Service:
                         y_min = (y_center - height/2) 
                         x_max = (x_min + width)
                         y_max = (y_min + height)
+                        y_bottom_center = (y_center + (height/2))
+                        y_top_center = (y_center - (height/2))
                         # -------------------------------------------------
 
                         # ---- Normalize BoundingBox Coordinates ----------
@@ -111,6 +113,8 @@ class Yolo_Service:
                         y_min = y_min / 640
                         x_max = x_max / 640
                         y_max = y_max / 640
+                        y_bottom_center = y_bottom_center / 640
+                        y_top_center = y_top_center / 640
                         confidence = confidences[i]
                         class_id = class_ids[i]
                         # -------------------------------------------------
@@ -126,22 +130,13 @@ class Yolo_Service:
                             "bb_x_min": float(x_min),
                             "bb_y_min": float(y_min),
                             "bb_x_max": float(x_max),
-                            "bb_y_max": float(y_max)
+                            "bb_y_max": float(y_max),
+                            "bb_x_bottom_center": float(x_center),
+                            "bb_y_bottom_center": float(y_bottom_center),
+                            "bb_x_top_center": float(x_center),
+                            "bb_y_top_center": float(y_top_center)
                         })
                                         
-
-                # result.append({
-                #     "class_id": int(class_id),
-                #     "class_name": class_name,
-                #     "confidence": float(class_confidence),
-                #     "x_center": float(x_center),
-                #     "y_center": float(y_center),
-                #     "width": float(width),
-                #     "height": float(height)
-                # })
-
-                        # print(f"Caixa Delimitadora: ({x_min}, {y_min}, {x_max}, {y_max}), Confiança: {confidence}, Classe: {class_id}, Confiança da Classe: {class_confidence}")
-
                 self.output_fifo.append({"id": id, "output": result})
 
     def add_frame(self, id: int, img_path: str):
