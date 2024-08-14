@@ -117,6 +117,7 @@ class Yolo_Service:
                         y_top_center = y_top_center / 640
                         confidence = confidences[i]
                         class_id = class_ids[i]
+                        class_name = self.classes[class_id]
                         # -------------------------------------------------
 
                         result.append({
