@@ -53,9 +53,13 @@ async def inference_controller(file, log_file):
     for out in result['output']: outputs.append(YoloOutput(**out))
     response = YoloModel(
         id=result["id"],
-        output=outputs
+        output=outputs,
+        ready=result["ready"],
+        timestamp=result["timestamp"]
     )
     # ==== End Fit on MODEL ====
+
+    await file_manager.delete_file(file["file_path"])
 
     log_writer(log_file, f"Controller - Succesfully processed inference. Result: {result}")
     return response

@@ -85,7 +85,7 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 
 @app.on_event("startup")
 async def startup_event():
-    yolo_service = Yolo_Service(2, "/home/richard/DNN-models/Yolo-v8/Detection/yolov8x.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
+    yolo_service = Yolo_Service(2, "/home/richard/DNN-models/Yolo-v8/Detection/yolov8l.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
     yolo_service.start_service()
     set_global_yolo_service(yolo_service)
     logging.info(

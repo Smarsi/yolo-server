@@ -3,6 +3,7 @@ import cv2
 import threading
 import numpy as np
 from time import sleep
+from datetime import datetime, time
 
 class Yolo_Service:
 
@@ -138,7 +139,7 @@ class Yolo_Service:
                             "bb_y_top_center": float(y_top_center)
                         })
                                         
-                self.output_fifo.append({"id": id, "output": result})
+                self.output_fifo.append({"id": id, "output": result, "ready": True, "timestamp": datetime.now().time()})
 
     def add_frame(self, id: int, img_path: str):
         self.entry_fifo.append({"id": id, "img_path": img_path})
@@ -146,9 +147,15 @@ class Yolo_Service:
     
     def get_result(self, id: int) -> dict:
         result = None
-        while not result:
+        max_trys = (10)
+        trys = 0
+        while not result and trys < max_trys:
             for output in self.output_fifo:
                 if output["id"] == id:
                     result = output
                     self.output_fifo.remove(output)
                     return result
+            trys += 1
+            sleep(0.1)
+        result = {"id": id, "output": [], "ready": False, "timestamp": datetime.now().time()}
+        return result

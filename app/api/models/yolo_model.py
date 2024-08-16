@@ -1,5 +1,6 @@
-from pydantic import BaseModel, StrictStr, StrictInt, StrictFloat
+from pydantic import BaseModel, StrictStr, StrictInt, StrictFloat, StrictBool
 from typing import Optional
+from datetime import time
 
 # Model
 class YoloOutput(BaseModel):
@@ -28,6 +29,8 @@ class YoloOutput(BaseModel):
 class YoloModel(BaseModel):
         id: StrictStr
         output: list[YoloOutput]
+        ready: StrictBool
+        timestamp: time
 
         def normalize_fields(self):
             for field_name, field_value in self.model_dump().items():
