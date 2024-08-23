@@ -22,7 +22,6 @@ class File_Manager:
         file_path = save_directory / file_name
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
-
         return {
             "filename": file_name,
             "file_path": str(file_path),
@@ -93,7 +92,6 @@ class File_Manager:
     async def delete_file(self, filepath):
         try:
             os.remove(filepath)
-            print(f"Arquivo {filepath} removido com sucesso.")
         except Exception as e:
             print(f"Erro ao remover arquivo {filepath}: {e}")
         

@@ -1,4 +1,5 @@
 from uuid import uuid4 as uuid
+import time
 
 # Errors Import
 from errors import APIError
@@ -37,6 +38,7 @@ async def inference_controller(file, log_file):
     inference_id = str(uuid()).replace("-", "")
 
     file = await file_manager.save_file(file, inference_id)
+    time.sleep(0.02)
     
 
     log_writer(log_file, f"Controller - Starting inference.")
