@@ -14,7 +14,7 @@ from app.handlers.error_handler import global_error_handler, global_http_excepti
 from app.api.routes import router, get_tags_description
 
 # Services Import
-from app.service import Yolo_Service, set_global_yolo_service, get_global_yolo_service
+from app.service import Yolo_Service, set_global_yolo_service, get_global_yolo_service, new_set_global_yolo_service, new_get_global_yolo_service, newYolo_Service
 
 log = logging.getLogger("uvicorn")
 
@@ -85,9 +85,12 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 
 @app.on_event("startup")
 async def startup_event():
-    yolo_service = Yolo_Service(1, "/home/richard/DNN-models/Yolo-v8/Detection/yolov8s.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
+    yolo_service = Yolo_Service(3, "/home/richard/DNN-models/Yolo-v8/Detection/yolov8n.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
     yolo_service.start_service()
     set_global_yolo_service(yolo_service)
+
+    # yolo_service = newYolo_Service("/home/richard/DNN-models/Yolo-v8/Detection/yolov8n.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
+    # new_set_global_yolo_service(yolo_service)
     logging.info(
         "Starting Up..."
     )
