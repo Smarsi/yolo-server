@@ -1,5 +1,6 @@
 import os
 import cv2
+import queue
 import threading
 import numpy as np
 from time import sleep
@@ -33,8 +34,8 @@ class Yolo_Service:
         self.instances_quantity = instances_quantity
         self.model = model
         self.classes_file = classes
-        self.entry_fifo = []
-        self.output_fifo = []
+        self.entry_fifo = queue.Queue()
+        self.output_fifo = queue.Queue()
         self.threads = []
 
         self.running = False
@@ -67,117 +68,101 @@ class Yolo_Service:
     def run(self, network: cv2.dnn.Net):
         log_writer(self.log_file, f"Service - YOLO Service started successfully. (Called from run)")
         while(self.running):
-            sleep(0.1)
-            data = {}
-            confidence_threshold = 0.5
-            nms_threshold = 0.4
-            log_writer(self.log_file, f"Service - Current FIFO Size ({len(self.entry_fifo)})")
-            if len(self.entry_fifo) > 0:
-                try:
-                    data = self.entry_fifo.pop(0)
-                    id = data["id"]
-                    img_path = data["img_path"]
+            try:
+                data = self.entry_fifo.get(timeout=1)
+                img = data["img"]
+                confidence_threshold = 0.5
+                nms_threshold = 0.4
+                blob = cv2.dnn.blobFromImage(img, 1/255, (640, 640), swapRB=True, crop=False)
+                network.setInput(blob)
+                outputs = network.forward()
 
-                    frame = cv2.imread(img_path)
-                    blob = cv2.dnn.blobFromImage(frame, 1/255, (640, 640), swapRB=True, crop=False)
-                    network.setInput(blob)
-                    outputs = network.forward()
+                result = []
+                boxes = []
+                confidences = []
+                class_ids = []
 
-                    result = []
-                    boxes = []
-                    confidences = []
-                    class_ids = []
+                for i in range(outputs.shape[2]):
+                    detection = outputs[0, :, i]
+                    if np.max(detection[4:]) > 0.5:
+                        x_center = detection[0] 
+                        y_center = detection[1] 
+                        width = detection[2] 
+                        height = detection[3]
+                        
+                        class_id = np.argmax(detection[4:])
+                        confidence = np.max(detection[4:])
+                        class_name = self.classes[class_id]
 
-                    for i in range(outputs.shape[2]):
-                        detection = outputs[0, :, i]
-                        if np.max(detection[4:]) > 0.5:
-                            x_center = detection[0] 
-                            y_center = detection[1] 
-                            width = detection[2] 
-                            height = detection[3]
-                            
-                            class_id = np.argmax(detection[4:])
-                            confidence = np.max(detection[4:])
-                            class_name = self.classes[class_id]
+                        boxes.append([x_center, y_center, width, height])
+                        confidences.append(confidence)    
+                        class_ids.append(class_id)
 
-                            boxes.append([x_center, y_center, width, height])
-                            confidences.append(confidence)    
-                            class_ids.append(class_id)
+                indices = cv2.dnn.NMSBoxesBatched(boxes, confidences, class_ids, confidence_threshold, nms_threshold)
 
-                    indices = cv2.dnn.NMSBoxesBatched(boxes, confidences, class_ids, confidence_threshold, nms_threshold)
+                if len(indices) > 0:
+                    for i in indices.flatten():
+                        # ---- Calc BoundingBox Coordinates min & max ----
+                        x_center, y_center, width, height = boxes[i]
+                        x_min = (x_center - width/2)
+                        y_min = (y_center - height/2) 
+                        x_max = (x_min + width)
+                        y_max = (y_min + height)
+                        y_bottom_center = (y_center + (height/2))
+                        y_top_center = (y_center - (height/2))
+                        # -------------------------------------------------
 
-                    if len(indices) > 0:
-                        for i in indices.flatten():
-                            # ---- Calc BoundingBox Coordinates min & max ----
-                            x_center, y_center, width, height = boxes[i]
-                            x_min = (x_center - width/2)
-                            y_min = (y_center - height/2) 
-                            x_max = (x_min + width)
-                            y_max = (y_min + height)
-                            y_bottom_center = (y_center + (height/2))
-                            y_top_center = (y_center - (height/2))
-                            # -------------------------------------------------
+                        # ---- Normalize BoundingBox Coordinates ----------
+                        x_center = x_center / 640
+                        y_center = y_center / 640
+                        width = width / 640
+                        height = height / 640
+                        x_min = x_min / 640
+                        y_min = y_min / 640
+                        x_max = x_max / 640
+                        y_max = y_max / 640
+                        y_bottom_center = y_bottom_center / 640
+                        y_top_center = y_top_center / 640
+                        confidence = confidences[i]
+                        class_id = class_ids[i]
+                        class_name = self.classes[class_id]
+                        # -------------------------------------------------
 
-                            # ---- Normalize BoundingBox Coordinates ----------
-                            x_center = x_center / 640
-                            y_center = y_center / 640
-                            width = width / 640
-                            height = height / 640
-                            x_min = x_min / 640
-                            y_min = y_min / 640
-                            x_max = x_max / 640
-                            y_max = y_max / 640
-                            y_bottom_center = y_bottom_center / 640
-                            y_top_center = y_top_center / 640
-                            confidence = confidences[i]
-                            class_id = class_ids[i]
-                            class_name = self.classes[class_id]
-                            # -------------------------------------------------
+                        result.append({
+                            "class_id": int(class_id),
+                            "class_name": class_name,
+                            "confidence": float(confidence),
+                            "bb_x_center": float(x_center),
+                            "bb_y_center": float(y_center),
+                            "bb_width": float(width),
+                            "bb_height": float(height),
+                            "bb_x_min": float(x_min),
+                            "bb_y_min": float(y_min),
+                            "bb_x_max": float(x_max),
+                            "bb_y_max": float(y_max),
+                            "bb_x_bottom_center": float(x_center),
+                            "bb_y_bottom_center": float(y_bottom_center),
+                            "bb_x_top_center": float(x_center),
+                            "bb_y_top_center": float(y_top_center)
+                        })
+                self.output_fifo.put({"output": result, "ready": True, "timestamp": datetime.now().time()})
+            except queue.Empty:
+                continue
+            except Exception as e:
+                self.output_fifo.put({"output": [], "ready": False, "timestamp": datetime.now().time()})
+                log_writer(self.log_file, f"Service - Error: {e}")
+                continue
 
-                            result.append({
-                                "class_id": int(class_id),
-                                "class_name": class_name,
-                                "confidence": float(confidence),
-                                "bb_x_center": float(x_center),
-                                "bb_y_center": float(y_center),
-                                "bb_width": float(width),
-                                "bb_height": float(height),
-                                "bb_x_min": float(x_min),
-                                "bb_y_min": float(y_min),
-                                "bb_x_max": float(x_max),
-                                "bb_y_max": float(y_max),
-                                "bb_x_bottom_center": float(x_center),
-                                "bb_y_bottom_center": float(y_bottom_center),
-                                "bb_x_top_center": float(x_center),
-                                "bb_y_top_center": float(y_top_center)
-                            })
-                                            
-                    self.output_fifo.append({"id": id, "output": result, "ready": True, "timestamp": datetime.now().time()})
-                except Exception as e:
-                    self.output_fifo.append({"id": id, "output": [], "ready": False, "timestamp": datetime.now().time()})
-                    log_writer(self.log_file, f"Service - Error: {e}")
-                    error_log = create_traceback_error_log(e)
-                    log_writer(self.log_file, f"Service - Error Log: {error_log}")
-                    continue
-
-    def add_frame(self, id: int, img_path: str):
-        self.entry_fifo.append({"id": id, "img_path": img_path})
+    def add_frame(self, img: np.ndarray):
+        self.entry_fifo.put({"img": img})
         return
     
-    def get_result(self, id: int) -> dict:
-        result = None
-        max_trys = 10
-        trys = 0
-        while not result and trys < max_trys:
-            for output in self.output_fifo:
-                if output["id"] == id:
-                    result = output
-                    self.output_fifo.remove(output)
-                    return result
-            trys += 1
-            sleep(0.1)
-        result = {"id": id, "output": [], "ready": False, "timestamp": datetime.now().time()}
-        return result
+    def get_result(self) -> dict:
+        try:
+            result = self.output_fifo.get(timeout=5)  # Ajuste o timeout conforme necessário
+            return result
+        except queue.Empty:
+            return {"output": [], "ready": False, "timestamp": datetime.now().time()}
 
 
 class newYolo_Service:

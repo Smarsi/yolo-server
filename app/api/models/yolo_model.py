@@ -27,7 +27,6 @@ class YoloOutput(BaseModel):
                 setattr(self, field_name, new_value)
 
 class YoloModel(BaseModel):
-        id: StrictStr
         output: list[YoloOutput]
         ready: StrictBool
         timestamp: time
