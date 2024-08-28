@@ -1,8 +1,10 @@
 import os 
+import cv2
+import numpy as np
 import logging
 import logging.config
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError, HTTPException
 from app.api.middlewares.setup_request import setup_request
 from fastapi.openapi.utils import get_openapi
@@ -12,9 +14,10 @@ from app.handlers.error_handler import global_error_handler, global_http_excepti
 
 # Routers Import
 from app.api.routes import router, get_tags_description
+from app.api.websockets import router as ws_router, get_tags_description as ws_tags_description
 
 # Services Import
-from app.service import Yolo_Service, set_global_yolo_service, get_global_yolo_service, new_set_global_yolo_service, new_get_global_yolo_service, newYolo_Service
+from app.service import Yolo_Service, set_global_yolo_service, get_global_yolo_service
 
 log = logging.getLogger("uvicorn")
 
@@ -23,6 +26,10 @@ def create_application() -> FastAPI:
     application.include_router(
         router,
         prefix="/api"
+    )
+    application.include_router(
+        ws_router,
+        prefix="/ws"
     )
     return application
 
@@ -54,7 +61,7 @@ def custom_openapi():
         #summary="This is a model API",
         description="All the documentation for this API can be found here.",
         routes=app.routes,
-        tags=get_tags_description()
+        tags=get_tags_description() + ws_tags_description()
     )
     # openapi_schema["info"]["x-logo"] = {
     #     "url": "" # Add a logo url here if you want
@@ -85,12 +92,9 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 
 @app.on_event("startup")
 async def startup_event():
-    yolo_service = Yolo_Service(3, "/home/richard/DNN-models/Yolo-v8/Detection/yolov8x.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
+    yolo_service = Yolo_Service(2, "/home/richard/DNN-models/Yolo-v8/Detection/yolov8s.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
     yolo_service.start_service()
     set_global_yolo_service(yolo_service)
-
-    # yolo_service = newYolo_Service("/home/richard/DNN-models/Yolo-v8/Detection/yolov8n.onnx", "/home/richard/DNN-models/Yolo-v8/Detection/classes.txt")
-    # new_set_global_yolo_service(yolo_service)
     logging.info(
         "Starting Up..."
     )

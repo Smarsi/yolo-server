@@ -29,7 +29,7 @@ class YoloOutput(BaseModel):
 class YoloModel(BaseModel):
         output: list[YoloOutput]
         ready: StrictBool
-        timestamp: time
+        # timestamp: time
 
         def normalize_fields(self):
             for field_name, field_value in self.model_dump().items():
